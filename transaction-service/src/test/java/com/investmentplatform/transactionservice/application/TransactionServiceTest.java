@@ -22,6 +22,9 @@ class TransactionServiceTest {
     @Mock
     private TransactionRepository transactionRepository;
 
+    @Mock
+    private OutboxEventWriter outboxEventWriter;
+
     @InjectMocks
     private TransactionService transactionService;
 
@@ -48,6 +51,8 @@ class TransactionServiceTest {
         verify(transactionRepository).save(any(Transaction.class));
         // balance check NOT invoked for DEPOSIT
         verify(transactionRepository, never()).findByCustomerId(any());
+        // Outbox event written in same transaction
+        verify(outboxEventWriter).writeTransactionCreatedEvent(any(Transaction.class));
     }
 
     // -----------------------------------------------------------------------
@@ -66,6 +71,7 @@ class TransactionServiceTest {
 
         assertThat(result.getType()).isEqualTo(TransactionType.WITHDRAWAL);
         assertThat(result.getStatus()).isEqualTo(TransactionStatus.PENDING);
+        verify(outboxEventWriter).writeTransactionCreatedEvent(any(Transaction.class));
     }
 
     @Test
@@ -79,6 +85,7 @@ class TransactionServiceTest {
                 CUSTOMER_ID, new BigDecimal("500.00"), EUR, TransactionType.WITHDRAWAL);
 
         assertThat(result.getType()).isEqualTo(TransactionType.WITHDRAWAL);
+        verify(outboxEventWriter).writeTransactionCreatedEvent(any(Transaction.class));
     }
 
     @Test
@@ -92,6 +99,7 @@ class TransactionServiceTest {
                 .hasMessageContaining("Insufficient balance");
 
         verify(transactionRepository, never()).save(any());
+        verify(outboxEventWriter, never()).writeTransactionCreatedEvent(any());
     }
 
     @Test
@@ -104,6 +112,7 @@ class TransactionServiceTest {
         assertThatThrownBy(() -> transactionService.createTransaction(
                 CUSTOMER_ID, new BigDecimal("500.00"), EUR, TransactionType.WITHDRAWAL))
                 .isInstanceOf(InsufficientBalanceException.class);
+        verify(outboxEventWriter, never()).writeTransactionCreatedEvent(any());
     }
 
     @Test
@@ -117,6 +126,7 @@ class TransactionServiceTest {
                 CUSTOMER_ID, new BigDecimal("300.00"), EUR, TransactionType.WITHDRAWAL);
 
         assertThat(result.getType()).isEqualTo(TransactionType.WITHDRAWAL);
+        verify(outboxEventWriter).writeTransactionCreatedEvent(any(Transaction.class));
     }
 
     // -----------------------------------------------------------------------
@@ -130,7 +140,7 @@ class TransactionServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Customer ID");
 
-        verifyNoInteractions(transactionRepository);
+        verifyNoInteractions(transactionRepository, outboxEventWriter);
     }
 
     @Test
@@ -140,7 +150,7 @@ class TransactionServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Amount must be positive");
 
-        verifyNoInteractions(transactionRepository);
+        verifyNoInteractions(transactionRepository, outboxEventWriter);
     }
 
     @Test

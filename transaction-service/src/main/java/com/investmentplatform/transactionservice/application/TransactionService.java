@@ -14,9 +14,12 @@ import java.util.UUID;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
+    private final OutboxEventWriter outboxEventWriter;
 
-    public TransactionService(TransactionRepository transactionRepository) {
+    public TransactionService(TransactionRepository transactionRepository,
+                              OutboxEventWriter outboxEventWriter) {
         this.transactionRepository = transactionRepository;
+        this.outboxEventWriter = outboxEventWriter;
     }
 
     public Transaction createTransaction(UUID customerId, BigDecimal amount, String currency, TransactionType type) {
@@ -40,7 +43,13 @@ public class TransactionService {
         }
 
         Transaction transaction = Transaction.create(customerId, money, type);
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+
+        // Outbox Pattern: write event in the SAME @Transactional boundary.
+        // If this call throws, the whole transaction rolls back (no orphan row, no missing event).
+        outboxEventWriter.writeTransactionCreatedEvent(saved);
+
+        return saved;
     }
 
     @Transactional(readOnly = true)
