@@ -22,6 +22,8 @@
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <!-- Override Spring Boot 3.3.x default (1.19.8) — supports Docker 29.x API >= 1.44 -->
+        <testcontainers.version>1.21.3</testcontainers.version>
     </properties>
 
     <modules>
@@ -29,4 +31,24 @@
         <module>transaction-service</module>
         <module>audit-log-service</module>
     </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <!-- docker-java shaded inside testcontainers defaults to API 1.32;
+                             Docker 29.x requires minimum 1.44 — set via system property -->
+                        <systemPropertyVariables>
+                            <api.version>1.44</api.version>
+                        </systemPropertyVariables>
+                        <!-- Kafka containers need extra time to stop gracefully -->
+                        <forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>
