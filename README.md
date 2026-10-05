@@ -71,30 +71,64 @@ java -jar transaction-service/target/transaction-service-0.0.1-SNAPSHOT.jar
 java -jar audit-log-service/target/audit-log-service-0.0.1-SNAPSHOT.jar
 ```
 
-Try it (works with either option):
+Try it (works with either option). All endpoints require a bearer token; get one from Keycloak first (see [Security](#security)):
 
 ```bash
+TOKEN=$(curl -s -X POST http://localhost:8180/realms/investment/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=platform-user-client -d username=demo -d password=demo \
+  -d 'scope=customers:read customers:write transactions:read transactions:write audit:read' \
+  | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+
 # customer-service
-curl -X POST localhost:8081/api/customers -H 'Content-Type: application/json' \
+curl -X POST localhost:8081/api/customers -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"name":"Ada Lovelace","email":"ada@example.com"}'
 
 # transaction-service (use the customer id returned above)
-curl -X POST localhost:8082/api/transactions -H 'Content-Type: application/json' \
+curl -X POST localhost:8082/api/transactions -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"customerId":"<customer-id>","amount":250.00,"currency":"EUR","type":"DEPOSIT"}'
 
 # audit-log-service (use the transaction id or customer id; allow ~5 s for the outbox scheduler)
-curl 'localhost:8083/api/audit-log?aggregateId=<id>'
+curl -H "Authorization: Bearer $TOKEN" 'localhost:8083/api/audit-log?aggregateId=<id>'
 ```
 
 Other endpoints: `GET /api/customers/{id}`, `GET /api/transactions/{id}`, `GET /api/transactions?customerId=...`.
 
 Host ports are configurable. If a local MySQL, MongoDB or Kafka already uses a default port, copy `.env.example` to `.env`, change `MYSQL_PORT`, `MONGO_PORT` or `KAFKA_PORT`, and export the same variables before starting the services (`set -a; source .env; set +a`). `docker compose` reads `.env` automatically.
 
+## Security
+
+Keycloak (realm `investment`, imported from `keycloak/investment-realm.json`) runs in `docker compose` on port `8180` (`KEYCLOAK_PORT`). Each service is an OAuth2 resource server (`spring-boot-starter-oauth2-resource-server`): the JWT signature (JWKS), the issuer and the audience (the service name) are validated by the shared `security-common` module. Kafka and internal flows are not authenticated.
+
+| Endpoint | Required scope |
+|---|---|
+| `POST /api/customers` | `customers:write` |
+| `GET /api/customers/{id}` | `customers:read` |
+| `POST /api/transactions` | `transactions:write` |
+| `GET /api/transactions`, `GET /api/transactions/{id}` | `transactions:read` |
+| `GET /api/audit-log` | `audit:read` |
+
+No token gives `401`, a token without the right scope gives `403`. Health probes (`/actuator/health/**`) are public.
+
+Clients in the realm: `platform-user-client` (public, password grant, user `demo` / `demo`) and `platform-service-client` (secret `platform-service-secret`, client credentials). Scopes are optional, so a token only contains the scopes it asks for. The credentials are for local development only.
+
+```bash
+# client credentials flow
+curl -s -X POST http://localhost:8180/realms/investment/protocol/openid-connect/token \
+  -d grant_type=client_credentials -d client_id=platform-service-client -d client_secret=platform-service-secret \
+  -d 'scope=audit:read'
+
+curl -i localhost:8083/api/audit-log?aggregateId=x                                  # 401
+curl -i -X POST localhost:8081/api/customers -H "Authorization: Bearer $AUDIT_ONLY_TOKEN"   # 403
+```
+
+Containers validate the issuer `http://localhost:8180/realms/investment` (the URL clients use) while fetching keys from `http://keycloak:8080`. When running the jars outside Docker, the defaults already point at `localhost:8180`.
+
 ## Tests
 
 - Unit tests (JUnit 5 + Mockito): domain and service logic, outbox scheduler, idempotent consumer.
+- MockMvc security tests: 401 / 403 / 2xx per endpoint using the `jwt()` post-processor.
 - Testcontainers integration tests: MySQL repository, outbox → Kafka round trip, two concurrent outbox instances publishing every event exactly once, MongoDB repository.
-- End-to-end (`e2e-tests`, failsafe): starts the three packaged services against MySQL, Kafka and MongoDB containers, creates a customer and a transaction over REST and asserts both events are stored in MongoDB.
+- End-to-end (`e2e-tests`, failsafe): starts the three packaged services against MySQL, Kafka, MongoDB and Keycloak containers, obtains a real token from Keycloak (client credentials), checks 401/403, creates a customer and a transaction over REST and asserts both events are stored in MongoDB.
 
 ## Known trade-offs
 
@@ -103,7 +137,8 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 ## Limitations and next steps
 
 - `FAILED` outbox rows are not retried automatically and there is no alerting or admin endpoint for them yet.
-- No authentication, no observability (metrics, tracing).
+- Keycloak runs in dev mode with a committed demo realm; a real deployment needs its own realm, secrets and TLS.
+- No observability yet (metrics, tracing).
 
 ## Development status
 
@@ -118,5 +153,5 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 | 6 | End-to-end Testcontainers test + CI | ✅ Done |
 | 7 | Outbox hardening: batch claiming with `SKIP LOCKED`, retry with backoff, cleanup, shared `outbox-common` module | ✅ Done |
 | 8a | Dockerfiles and `app` compose profile | ✅ Done |
-| 8b | OAuth2 / OIDC authentication (Keycloak, JWT resource servers) | Planned |
+| 8b | OAuth2 / OIDC authentication (Keycloak, JWT resource servers, scope-based authorization) | In progress |
 | 8c | Observability: Actuator health probes, Prometheus metrics | Planned |
