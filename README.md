@@ -117,6 +117,6 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 | 5 | Testcontainers integration tests (MySQL, Kafka, MongoDB) | ✅ Done |
 | 6 | End-to-end Testcontainers test + CI | ✅ Done |
 | 7 | Outbox hardening: batch claiming with `SKIP LOCKED`, retry with backoff, cleanup, shared `outbox-common` module | ✅ Done |
-| 8a | Dockerfiles and `app` compose profile | In progress (waiting for green CI) |
+| 8a | Dockerfiles and `app` compose profile | ✅ Done |
 | 8b | OAuth2 / OIDC authentication (Keycloak, JWT resource servers) | Planned |
 | 8c | Observability: Actuator health probes, Prometheus metrics | Planned |
