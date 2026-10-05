@@ -46,10 +46,19 @@ Java 17, Spring Boot 3.3, Spring Data JPA (MySQL 8.4), Spring Data MongoDB (Mong
 
 ## Quick start
 
-Requirements: JDK 17, Maven 3.9+, Docker.
+Requirements: Docker (and JDK 17 + Maven 3.9+ to build and test locally).
+
+**Option A: whole stack in containers**
 
 ```bash
-# 1. Infrastructure: MySQL, MongoDB, Kafka
+docker compose --profile app up -d --build   # MySQL, MongoDB, Kafka + the three services (multi-stage images, non-root, healthchecks)
+docker compose --profile app ps              # wait until all show "healthy"
+```
+
+**Option B: infrastructure in containers, services from the jars**
+
+```bash
+# 1. Infrastructure only: MySQL, MongoDB, Kafka
 docker compose up -d
 
 # 2. Build all modules and run all tests (unit + Testcontainers + end-to-end).
@@ -62,9 +71,7 @@ java -jar transaction-service/target/transaction-service-0.0.1-SNAPSHOT.jar
 java -jar audit-log-service/target/audit-log-service-0.0.1-SNAPSHOT.jar
 ```
 
-Host ports are configurable. If a local MySQL, MongoDB or Kafka already uses a default port, copy `.env.example` to `.env`, change `MYSQL_PORT`, `MONGO_PORT` or `KAFKA_PORT`, and export the same variables before starting the services (`set -a; source .env; set +a`). `docker compose` reads `.env` automatically.
-
-Try it:
+Try it (works with either option):
 
 ```bash
 # customer-service
@@ -81,6 +88,8 @@ curl 'localhost:8083/api/audit-log?aggregateId=<id>'
 
 Other endpoints: `GET /api/customers/{id}`, `GET /api/transactions/{id}`, `GET /api/transactions?customerId=...`.
 
+Host ports are configurable. If a local MySQL, MongoDB or Kafka already uses a default port, copy `.env.example` to `.env`, change `MYSQL_PORT`, `MONGO_PORT` or `KAFKA_PORT`, and export the same variables before starting the services (`set -a; source .env; set +a`). `docker compose` reads `.env` automatically.
+
 ## Tests
 
 - Unit tests (JUnit 5 + Mockito): domain and service logic, outbox scheduler, idempotent consumer.
@@ -94,7 +103,7 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 ## Limitations and next steps
 
 - `FAILED` outbox rows are not retried automatically and there is no alerting or admin endpoint for them yet.
-- No authentication, no Dockerfiles, no observability (metrics, tracing).
+- No authentication, no observability (metrics, tracing).
 
 ## Development status
 
@@ -108,4 +117,6 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 | 5 | Testcontainers integration tests (MySQL, Kafka, MongoDB) | ✅ Done |
 | 6 | End-to-end Testcontainers test + CI | ✅ Done |
 | 7 | Outbox hardening: batch claiming with `SKIP LOCKED`, retry with backoff, cleanup, shared `outbox-common` module | ✅ Done |
-| 8 | Dockerfiles for the services, authentication, observability | Planned |
+| 8a | Dockerfiles and `app` compose profile | In progress (waiting for green CI) |
+| 8b | OAuth2 / OIDC authentication (Keycloak, JWT resource servers) | Planned |
+| 8c | Observability: Actuator health probes, Prometheus metrics | Planned |
