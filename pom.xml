@@ -27,12 +27,23 @@
     </properties>
 
     <modules>
+        <module>outbox-common</module>
         <module>customer-service</module>
         <module>transaction-service</module>
         <module>audit-log-service</module>
         <!-- must stay last: starts the packaged jars of the services above -->
         <module>e2e-tests</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.investmentplatform</groupId>
+                <artifactId>outbox-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>
