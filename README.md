@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tdutra-dev/investment-platform-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/tdutra-dev/investment-platform-sim/actions/workflows/ci.yml)
 
-Event-driven microservices simulating an investment platform. Customers and transactions are managed by two Spring Boot services; every state change is published to Kafka through a Transactional Outbox and stored by a third service as an audit trail in MongoDB.
+Personal portfolio project built to practice event-driven microservices. It simulates an investment platform. Customers and transactions are managed by two Spring Boot services; every state change is published to Kafka through a Transactional Outbox and stored by a third service as an audit trail in MongoDB.
 
 ## Architecture
 
@@ -42,7 +42,8 @@ Requirements: JDK 17, Maven 3.9+, Docker.
 # 1. Infrastructure: MySQL, MongoDB, Kafka
 docker compose up -d
 
-# 2. Build all modules and run all tests (unit + Testcontainers + end-to-end)
+# 2. Build all modules and run all tests (unit + Testcontainers + end-to-end).
+#    Needs Docker running; takes a few minutes (container startup + end-to-end test).
 mvn clean verify
 
 # 3. Run the services (one terminal each)
@@ -74,6 +75,15 @@ Other endpoints: `GET /api/customers/{id}`, `GET /api/transactions/{id}`, `GET /
 - Testcontainers integration tests: MySQL repository, outbox → Kafka round trip, MongoDB repository.
 - End-to-end (`e2e-tests`, failsafe): starts the three packaged services against MySQL, Kafka and MongoDB containers, creates a customer and a transaction over REST and asserts both events are stored in MongoDB.
 
+## Known trade-offs
+
+At-least-once delivery, made safe by idempotency via `eventId`; no ordering guarantee across topics.
+
+## Limitations and next steps
+
+- The outbox scheduler is not safe to run on multiple instances yet (row locking planned).
+- No authentication, no Dockerfiles, no observability (metrics, tracing).
+
 ## Development status
 
 | Phase | Description | Status |
@@ -84,6 +94,6 @@ Other endpoints: `GET /api/customers/{id}`, `GET /api/transactions/{id}`, `GET /
 | 3 | Transactional Outbox + Kafka publisher (transaction and customer events) | ✅ Done |
 | 4 | `audit-log-service`: Kafka consumer, idempotent MongoDB persistence, query API | ✅ Done |
 | 5 | Testcontainers integration tests (MySQL, Kafka, MongoDB) | ✅ Done |
-| 6 | End-to-end Testcontainers test + CI | ✅ Done |
+| 6 | End-to-end Testcontainers test + CI | In progress (waiting for green CI on main) |
 | 7 | Outbox hardening (batching, row locking for multiple instances, cleanup of sent rows) | Planned |
 | 8 | Dockerfiles for the services, authentication, observability | Planned |
