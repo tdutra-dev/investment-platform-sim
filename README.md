@@ -30,6 +30,16 @@ flowchart LR
 - **MongoDB for the audit log.** Events are append-only, schema-flexible documents that are stored verbatim and queried by `aggregateId`; no joins or relational constraints are needed.
 - **Idempotent consumer.** Every event carries an `eventId`, which the audit-log service uses as the document `_id`. Redelivered events hit a duplicate key and are ignored, so at-least-once delivery produces exactly one audit entry.
 
+## Outbox strategy
+
+Both `transaction-service` and `customer-service` use the shared `outbox-common` module.
+
+- **Claiming:** each scheduler run opens one transaction and claims a batch with `SELECT ... FOR UPDATE SKIP LOCKED` (MySQL 8.4). Several instances can run against the same table without publishing a row twice: a row locked by one instance is skipped by the others.
+- **States:** `PENDING` -> `SENT` after the broker ack. A failed publish increments `attempts`, stores `last_error` and sets `next_attempt_at` with exponential backoff; after the max attempts the row becomes `FAILED` (kept for inspection, never retried automatically).
+- **Cleanup:** a second job deletes `SENT` rows older than the retention period.
+- **Configuration** (per service, `application.properties`): `outbox.batch-size` (50), `outbox.max-attempts` (5), `outbox.backoff.initial` (1s), `outbox.backoff.max` (5m), `outbox.retention` (7d), `outbox.publisher.fixed-delay-ms` (5000), `outbox.cleanup.fixed-delay-ms` (1h).
+- **Remaining limits:** delivery is at-least-once (a crash after the broker ack but before the commit re-sends the row; consumers deduplicate by `eventId`); there is no ordering guarantee across topics, and none across rows once retries are involved; a publish failure stops the current batch.
+
 ## Stack
 
 Java 17, Spring Boot 3.3, Spring Data JPA (MySQL 8.4), Spring Data MongoDB (MongoDB 7), Spring Kafka, JUnit 5, Mockito, Testcontainers.
@@ -74,7 +84,7 @@ Other endpoints: `GET /api/customers/{id}`, `GET /api/transactions/{id}`, `GET /
 ## Tests
 
 - Unit tests (JUnit 5 + Mockito): domain and service logic, outbox scheduler, idempotent consumer.
-- Testcontainers integration tests: MySQL repository, outbox → Kafka round trip, MongoDB repository.
+- Testcontainers integration tests: MySQL repository, outbox → Kafka round trip, two concurrent outbox instances publishing every event exactly once, MongoDB repository.
 - End-to-end (`e2e-tests`, failsafe): starts the three packaged services against MySQL, Kafka and MongoDB containers, creates a customer and a transaction over REST and asserts both events are stored in MongoDB.
 
 ## Known trade-offs
@@ -83,7 +93,7 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 
 ## Limitations and next steps
 
-- The outbox scheduler is not safe to run on multiple instances yet (row locking planned).
+- `FAILED` outbox rows are not retried automatically and there is no alerting or admin endpoint for them yet.
 - No authentication, no Dockerfiles, no observability (metrics, tracing).
 
 ## Development status
@@ -97,5 +107,5 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 | 4 | `audit-log-service`: Kafka consumer, idempotent MongoDB persistence, query API | ✅ Done |
 | 5 | Testcontainers integration tests (MySQL, Kafka, MongoDB) | ✅ Done |
 | 6 | End-to-end Testcontainers test + CI | ✅ Done |
-| 7 | Outbox hardening (batching, row locking for multiple instances, cleanup of sent rows) | Planned |
+| 7 | Outbox hardening: batch claiming with `SKIP LOCKED`, retry with backoff, cleanup, shared `outbox-common` module | In progress (waiting for green CI) |
 | 8 | Dockerfiles for the services, authentication, observability | Planned |
