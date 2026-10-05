@@ -107,5 +107,5 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 | 4 | `audit-log-service`: Kafka consumer, idempotent MongoDB persistence, query API | ✅ Done |
 | 5 | Testcontainers integration tests (MySQL, Kafka, MongoDB) | ✅ Done |
 | 6 | End-to-end Testcontainers test + CI | ✅ Done |
-| 7 | Outbox hardening: batch claiming with `SKIP LOCKED`, retry with backoff, cleanup, shared `outbox-common` module | In progress (waiting for green CI) |
+| 7 | Outbox hardening: batch claiming with `SKIP LOCKED`, retry with backoff, cleanup, shared `outbox-common` module | ✅ Done |
 | 8 | Dockerfiles for the services, authentication, observability | Planned |
