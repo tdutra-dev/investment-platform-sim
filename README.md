@@ -52,6 +52,8 @@ java -jar transaction-service/target/transaction-service-0.0.1-SNAPSHOT.jar
 java -jar audit-log-service/target/audit-log-service-0.0.1-SNAPSHOT.jar
 ```
 
+Host ports are configurable. If a local MySQL, MongoDB or Kafka already uses a default port, copy `.env.example` to `.env`, change `MYSQL_PORT`, `MONGO_PORT` or `KAFKA_PORT`, and export the same variables before starting the services (`set -a; source .env; set +a`). `docker compose` reads `.env` automatically.
+
 Try it:
 
 ```bash
