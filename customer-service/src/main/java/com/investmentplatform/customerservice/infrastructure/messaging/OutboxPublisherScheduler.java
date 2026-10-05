@@ -1,60 +1,34 @@
 package com.investmentplatform.customerservice.infrastructure.messaging;
 
+import com.investmentplatform.outbox.OutboxProcessor;
 import com.investmentplatform.customerservice.infrastructure.persistence.OutboxEvent;
-import com.investmentplatform.customerservice.infrastructure.persistence.OutboxRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 /**
- * Outbox Pattern — scheduled publisher.
- *
- * Every {@code fixedDelay} ms this job:
- * 1. Reads all rows from {@code customer_outbox_events} where {@code published = false}
- * 2. Publishes each payload to Kafka via {@link KafkaEventProducer} (waits for the broker ack)
- * 3. Marks each row as published (sent) only after the ack; failed rows are retried
- *
- * Enabled only when {@code scheduling.enabled=true} (see SchedulingConfig).
- * Disabled in tests via {@code scheduling.enabled=false} in test application.properties.
+ * Triggers the shared {@link OutboxProcessor}. Each run is one transaction: rows are claimed with
+ * {@code FOR UPDATE SKIP LOCKED}, published, marked, and the locks are released on commit.
+ * Scheduling is switched off in tests via {@code scheduling.enabled=false} (see SchedulingConfig).
  */
 @Component
 public class OutboxPublisherScheduler {
 
-    private static final Logger log = LoggerFactory.getLogger(OutboxPublisherScheduler.class);
+    private final OutboxProcessor<OutboxEvent> processor;
 
-    private final OutboxRepository outboxRepository;
-    private final KafkaEventProducer kafkaEventProducer;
-
-    public OutboxPublisherScheduler(OutboxRepository outboxRepository,
-                                    KafkaEventProducer kafkaEventProducer) {
-        this.outboxRepository = outboxRepository;
-        this.kafkaEventProducer = kafkaEventProducer;
+    public OutboxPublisherScheduler(OutboxProcessor<OutboxEvent> processor) {
+        this.processor = processor;
     }
 
     @Scheduled(fixedDelayString = "${outbox.publisher.fixed-delay-ms:5000}")
     @Transactional
     public void publishPendingEvents() {
-        List<OutboxEvent> unpublished = outboxRepository.findByPublishedFalse();
-        if (unpublished.isEmpty()) {
-            return;
-        }
+        processor.publishBatch();
+    }
 
-        log.debug("Outbox: processing {} unpublished events", unpublished.size());
-
-        for (OutboxEvent event : unpublished) {
-            try {
-                kafkaEventProducer.publish(event.getAggregateId(), event.getPayload());
-                event.markPublished();
-                outboxRepository.save(event);
-            } catch (Exception e) {
-                log.error("Outbox: failed to publish event {} (aggregateId={}): {}",
-                        event.getEventType(), event.getAggregateId(), e.getMessage());
-                break; // keep ordering: retry this row on the next run
-            }
-        }
+    @Scheduled(fixedDelayString = "${outbox.cleanup.fixed-delay-ms:3600000}")
+    @Transactional
+    public void cleanupSentEvents() {
+        processor.cleanup();
     }
 }

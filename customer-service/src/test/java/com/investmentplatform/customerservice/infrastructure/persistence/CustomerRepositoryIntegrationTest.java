@@ -4,15 +4,11 @@ import com.investmentplatform.customerservice.domain.Customer;
 import com.investmentplatform.customerservice.domain.CustomerId;
 import com.investmentplatform.customerservice.domain.CustomerRepository;
 import com.investmentplatform.customerservice.domain.KycStatus;
+import com.investmentplatform.customerservice.AbstractMySqlIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Optional;
 
@@ -21,27 +17,10 @@ import static org.assertj.core.api.Assertions.*;
 /**
  * Integration test — verifies JPA repository with a real MySQL 8 container.
  * Each test method runs inside a transaction that is rolled back after the test.
- * Requires Docker. Skipped automatically if Docker is unavailable.
  */
 @SpringBootTest
-@Testcontainers(disabledWithoutDocker = true)
 @Transactional
-class CustomerRepositoryIntegrationTest {
-
-    @Container
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8")
-            .withDatabaseName("platform")
-            .withUsername("root")
-            .withPassword("root");
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mysql::getJdbcUrl);
-        registry.add("spring.datasource.username", mysql::getUsername);
-        registry.add("spring.datasource.password", mysql::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-    }
+class CustomerRepositoryIntegrationTest extends AbstractMySqlIntegrationTest {
 
     @Autowired
     private CustomerRepository customerRepository;
