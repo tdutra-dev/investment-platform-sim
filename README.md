@@ -94,6 +94,6 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 | 3 | Transactional Outbox + Kafka publisher (transaction and customer events) | ✅ Done |
 | 4 | `audit-log-service`: Kafka consumer, idempotent MongoDB persistence, query API | ✅ Done |
 | 5 | Testcontainers integration tests (MySQL, Kafka, MongoDB) | ✅ Done |
-| 6 | End-to-end Testcontainers test + CI | In progress (waiting for green CI on main) |
+| 6 | End-to-end Testcontainers test + CI | ✅ Done |
 | 7 | Outbox hardening (batching, row locking for multiple instances, cleanup of sent rows) | Planned |
 | 8 | Dockerfiles for the services, authentication, observability | Planned |
