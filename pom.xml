@@ -28,6 +28,7 @@
 
     <modules>
         <module>outbox-common</module>
+        <module>security-common</module>
         <module>customer-service</module>
         <module>transaction-service</module>
         <module>audit-log-service</module>
@@ -40,6 +41,11 @@
             <dependency>
                 <groupId>com.investmentplatform</groupId>
                 <artifactId>outbox-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.investmentplatform</groupId>
+                <artifactId>security-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
