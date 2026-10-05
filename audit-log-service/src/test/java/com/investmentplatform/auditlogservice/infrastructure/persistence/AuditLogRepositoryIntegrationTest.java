@@ -78,4 +78,14 @@ class AuditLogRepositoryIntegrationTest {
 
         assertThat(results).isEmpty();
     }
+
+    @Test
+    void insert_shouldRejectDuplicateEventId() {
+        auditLogRepository.insert(AuditLogEntry.create("evt-1", "agg-1", "TransactionCreated", "transaction-events", "{}"));
+
+        assertThatThrownBy(() -> auditLogRepository.insert(
+                AuditLogEntry.create("evt-1", "agg-1", "TransactionCreated", "transaction-events", "{}")))
+                .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+        assertThat(auditLogRepository.findByAggregateIdOrderByReceivedAtDesc("agg-1")).hasSize(1);
+    }
 }

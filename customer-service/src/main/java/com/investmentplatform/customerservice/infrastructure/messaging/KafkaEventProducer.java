@@ -1,4 +1,4 @@
-package com.investmentplatform.transactionservice.infrastructure.messaging;
+package com.investmentplatform.customerservice.infrastructure.messaging;
 
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.concurrent.TimeoutException;
 @Component
 public class KafkaEventProducer {
 
-    static final String TOPIC_TRANSACTION_EVENTS = "transaction-events";
+    static final String TOPIC_CUSTOMER_EVENTS = "customer-events";
     private static final long SEND_TIMEOUT_SECONDS = 10;
 
     private final KafkaTemplate<String, String> kafkaTemplate;
@@ -26,12 +26,12 @@ public class KafkaEventProducer {
 
     public void publish(String key, String payload) {
         try {
-            kafkaTemplate.send(TOPIC_TRANSACTION_EVENTS, key, payload).get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            kafkaTemplate.send(TOPIC_CUSTOMER_EVENTS, key, payload).get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while publishing to " + TOPIC_TRANSACTION_EVENTS, e);
+            throw new IllegalStateException("Interrupted while publishing to " + TOPIC_CUSTOMER_EVENTS, e);
         } catch (ExecutionException | TimeoutException e) {
-            throw new IllegalStateException("Failed to publish to " + TOPIC_TRANSACTION_EVENTS, e);
+            throw new IllegalStateException("Failed to publish to " + TOPIC_CUSTOMER_EVENTS, e);
         }
     }
 }

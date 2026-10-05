@@ -8,6 +8,8 @@ import com.investmentplatform.transactionservice.infrastructure.persistence.Outb
 import com.investmentplatform.transactionservice.infrastructure.persistence.OutboxRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 /**
  * Implements {@link OutboxEventWriter} by serializing the domain event to JSON
  * and persisting it to the outbox_events table.
@@ -29,7 +31,9 @@ public class OutboxEventWriterImpl implements OutboxEventWriter {
 
     @Override
     public void writeTransactionCreatedEvent(Transaction transaction) {
+        UUID eventId = UUID.randomUUID();
         TransactionCreatedEvent event = new TransactionCreatedEvent(
+                eventId.toString(),
                 "TransactionCreated",
                 transaction.getId().value().toString(),
                 transaction.getCustomerId().toString(),
@@ -48,6 +52,6 @@ public class OutboxEventWriterImpl implements OutboxEventWriter {
                     + event.aggregateId(), e);
         }
 
-        outboxRepository.save(OutboxEvent.create(event.aggregateId(), event.eventType(), payload));
+        outboxRepository.save(OutboxEvent.create(eventId, event.aggregateId(), event.eventType(), payload));
     }
 }

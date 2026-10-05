@@ -5,9 +5,10 @@ import java.math.BigDecimal;
 /**
  * Immutable DTO representing a TransactionCreated domain event.
  * Serialized as JSON and stored in the outbox_events table payload column.
- * Schema matches the spec (see README § 7).
+ * {@code eventId} uniquely identifies the event so consumers can deduplicate redeliveries.
  */
 public record TransactionCreatedEvent(
+        String eventId,
         String eventType,
         String aggregateId,
         String customerId,

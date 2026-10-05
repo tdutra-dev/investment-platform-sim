@@ -22,6 +22,9 @@ class CustomerServiceTest {
     @Mock
     private CustomerRepository customerRepository;
 
+    @Mock
+    private OutboxEventWriter outboxEventWriter;
+
     @InjectMocks
     private CustomerService customerService;
 
@@ -42,6 +45,7 @@ class CustomerServiceTest {
         assertThat(result.getKycStatus()).isEqualTo(KycStatus.PENDING);
         assertThat(result.getId()).isNotNull();
         verify(customerRepository).save(any(Customer.class));
+        verify(outboxEventWriter).writeCustomerRegisteredEvent(result);
     }
 
     @Test

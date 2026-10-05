@@ -16,7 +16,7 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>investment-platform-sim</name>
-    <description>Investment Platform Simulation — DDD + Microservices + Kafka</description>
+    <description>Event-driven microservices with Spring Boot, Kafka, Transactional Outbox, MySQL and MongoDB</description>
 
     <properties>
         <java.version>17</java.version>
@@ -30,6 +30,8 @@
         <module>customer-service</module>
         <module>transaction-service</module>
         <module>audit-log-service</module>
+        <!-- must stay last: starts the packaged jars of the services above -->
+        <module>e2e-tests</module>
     </modules>
 
     <build>
@@ -46,6 +48,15 @@
                         </systemPropertyVariables>
                         <!-- Kafka containers need extra time to stop gracefully -->
                         <forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <api.version>1.44</api.version>
+                        </systemPropertyVariables>
                     </configuration>
                 </plugin>
             </plugins>

@@ -14,8 +14,11 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
 
-    public CustomerService(CustomerRepository customerRepository) {
+    private final OutboxEventWriter outboxEventWriter;
+
+    public CustomerService(CustomerRepository customerRepository, OutboxEventWriter outboxEventWriter) {
         this.customerRepository = customerRepository;
+        this.outboxEventWriter = outboxEventWriter;
     }
 
     public Customer registerCustomer(String name, String email) {
@@ -29,7 +32,10 @@ public class CustomerService {
             throw new IllegalArgumentException("A customer with email '" + email + "' already exists");
         }
         Customer customer = Customer.register(name, email);
-        return customerRepository.save(customer);
+        Customer saved = customerRepository.save(customer);
+        // Outbox: same transaction as the customer insert, published to Kafka later by the scheduler
+        outboxEventWriter.writeCustomerRegisteredEvent(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)

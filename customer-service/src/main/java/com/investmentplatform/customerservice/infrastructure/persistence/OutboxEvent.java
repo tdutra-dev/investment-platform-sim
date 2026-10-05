@@ -1,4 +1,4 @@
-package com.investmentplatform.transactionservice.infrastructure.persistence;
+package com.investmentplatform.customerservice.infrastructure.persistence;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -7,15 +7,15 @@ import java.util.UUID;
 /**
  * Technical entity for the Outbox Pattern.
  *
- * Written in the SAME DB transaction as {@link com.investmentplatform.transactionservice.domain.Transaction},
+ * Written in the SAME DB transaction as {@link com.investmentplatform.customerservice.domain.Customer},
  * guaranteeing that if the transaction is persisted, the event is also persisted —
  * eliminating the dual-write inconsistency between DB and Kafka.
  *
- * The {@link com.investmentplatform.transactionservice.infrastructure.messaging.OutboxPublisherScheduler}
+ * The {@link com.investmentplatform.customerservice.infrastructure.messaging.OutboxPublisherScheduler}
  * reads rows where {@code published = false} and publishes them to Kafka.
  */
 @Entity
-@Table(name = "outbox_events")
+@Table(name = "customer_customer_outbox_events")
 public class OutboxEvent {
 
     @Id

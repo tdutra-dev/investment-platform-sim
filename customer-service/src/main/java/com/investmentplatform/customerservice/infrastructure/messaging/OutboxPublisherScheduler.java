@@ -1,7 +1,7 @@
-package com.investmentplatform.transactionservice.infrastructure.messaging;
+package com.investmentplatform.customerservice.infrastructure.messaging;
 
-import com.investmentplatform.transactionservice.infrastructure.persistence.OutboxEvent;
-import com.investmentplatform.transactionservice.infrastructure.persistence.OutboxRepository;
+import com.investmentplatform.customerservice.infrastructure.persistence.OutboxEvent;
+import com.investmentplatform.customerservice.infrastructure.persistence.OutboxRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,7 +14,7 @@ import java.util.List;
  * Outbox Pattern — scheduled publisher.
  *
  * Every {@code fixedDelay} ms this job:
- * 1. Reads all rows from {@code outbox_events} where {@code published = false}
+ * 1. Reads all rows from {@code customer_outbox_events} where {@code published = false}
  * 2. Publishes each payload to Kafka via {@link KafkaEventProducer} (waits for the broker ack)
  * 3. Marks each row as published (sent) only after the ack; failed rows are retried
  *
