@@ -14,10 +14,11 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
@@ -46,8 +47,9 @@ class TransactionOutboxIntegrationTest {
             .withPassword("root");
 
     @Container
-    static KafkaContainer kafka = new KafkaContainer(
-            DockerImageName.parse("confluentinc/cp-kafka:7.6.1"));
+    static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:3.7.0"))
+            .waitingFor(Wait.forLogMessage(".*Kafka Server started.*", 1))
+            .withStartupTimeout(Duration.ofMinutes(3));
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
