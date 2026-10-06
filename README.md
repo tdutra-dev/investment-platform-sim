@@ -2,7 +2,17 @@
 
 [![CI](https://github.com/tdutra-dev/investment-platform-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/tdutra-dev/investment-platform-sim/actions/workflows/ci.yml)
 
-Personal portfolio project built to practice event-driven microservices. It simulates an investment platform. Customers and transactions are managed by two Spring Boot services; every state change is published to Kafka through a Transactional Outbox and stored by a third service as an audit trail in MongoDB.
+A portfolio project that simulates an investment platform using an event-driven microservices architecture. It provides APIs for customer management and transaction processing, and records business events in an audit log.
+
+• Built three Spring Boot services: Customer Service and Transaction Service with MySQL, plus an Audit Log Service with MongoDB.
+
+• Implemented a Transactional Outbox pattern to reliably publish customer and transaction events to Kafka, with retries, exponential backoff, and idempotent event handling.
+
+• Added Keycloak-based OAuth2/JWT authentication with scope-based authorization, and exposed health checks and Prometheus metrics.
+
+• Containerized the services and supporting infrastructure with Docker Compose; added unit, integration, and end-to-end tests using Testcontainers, and automated verification with GitHub Actions.
+
+Technologies: Java 17, Spring Boot, Spring Security, Spring Data JPA, MySQL, Kafka, MongoDB, Keycloak, Docker Compose, Testcontainers, Maven, GitHub Actions.
 
 ## Architecture
 
