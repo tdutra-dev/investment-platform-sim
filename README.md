@@ -123,9 +123,33 @@ curl -i -X POST localhost:8081/api/customers -H "Authorization: Bearer $AUDIT_ON
 
 Containers validate the issuer `http://localhost:8180/realms/investment` (the URL clients use) while fetching keys from `http://keycloak:8080`. When running the jars outside Docker, the defaults already point at `localhost:8180`.
 
+## Observability
+
+Each service exposes (through Spring Boot Actuator and Micrometer):
+
+| Endpoint | Purpose |
+|---|---|
+| `/actuator/health/liveness`, `/actuator/health/readiness` | Kubernetes-style probes (public, no details) |
+| `/actuator/prometheus` | Prometheus scrape endpoint (public in this demo; protect it at the network level in a real deployment) |
+
+Custom outbox metrics (customer-service and transaction-service, tag `outbox=<table name>`):
+
+| Metric | Type | Meaning |
+|---|---|---|
+| `outbox_pending` | gauge | rows waiting to be published (`PENDING`) |
+| `outbox_publish_success_total` | counter | events acknowledged by the broker |
+| `outbox_publish_failure_total` | counter | failed publish attempts (retried with backoff) |
+
+All metrics carry an `application` tag. Log lines include `[eventId=...]` while an event is being published or consumed, so one event can be followed across services with `grep <eventId>`. There is no Grafana, tracing or log shipping stack.
+
+```bash
+curl -s localhost:8082/actuator/prometheus | grep outbox_
+```
+
 ## Tests
 
 - Unit tests (JUnit 5 + Mockito): domain and service logic, outbox scheduler, idempotent consumer.
+- Observability tests: public health probes and Prometheus metrics on all three services, plus outbox metrics on both publishers.
 - MockMvc security tests: 401 / 403 / 2xx per endpoint using the `jwt()` post-processor.
 - Testcontainers integration tests: MySQL repository, outbox → Kafka round trip, two concurrent outbox instances publishing every event exactly once, MongoDB repository.
 - End-to-end (`e2e-tests`, failsafe): starts the three packaged services against MySQL, Kafka, MongoDB and Keycloak containers, obtains a real token from Keycloak (client credentials), checks 401/403, creates a customer and a transaction over REST and asserts both events are stored in MongoDB.
@@ -138,7 +162,7 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 
 - `FAILED` outbox rows are not retried automatically and there is no alerting or admin endpoint for them yet.
 - Keycloak runs in dev mode with a committed demo realm; a real deployment needs its own realm, secrets and TLS.
-- No observability yet (metrics, tracing).
+- No tracing, dashboards or alerting; metrics are exposed but not scraped by anything in the compose file.
 
 ## Development status
 
@@ -153,5 +177,5 @@ At-least-once delivery, made safe by idempotency via `eventId`; no ordering guar
 | 6 | End-to-end Testcontainers test + CI | ✅ Done |
 | 7 | Outbox hardening: batch claiming with `SKIP LOCKED`, retry with backoff, cleanup, shared `outbox-common` module | ✅ Done |
 | 8a | Dockerfiles and `app` compose profile | ✅ Done |
-| 8b | OAuth2 / OIDC authentication (Keycloak, JWT resource servers, scope-based authorization) | In progress |
-| 8c | Observability: Actuator health probes, Prometheus metrics | Planned |
+| 8b | OAuth2 / OIDC authentication (Keycloak, JWT resource servers, scope-based authorization) | ✅ Done |
+| 8c | Observability: Actuator health probes, Prometheus metrics, outbox metrics, eventId in logs | ✅ Done |

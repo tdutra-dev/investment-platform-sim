@@ -17,6 +17,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.investmentplatform</groupId>
             <artifactId>security-common</artifactId>
         </dependency>

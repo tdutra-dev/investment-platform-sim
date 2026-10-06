@@ -6,6 +6,7 @@ import com.investmentplatform.auditlogservice.infrastructure.persistence.AuditLo
 import com.investmentplatform.auditlogservice.infrastructure.persistence.AuditLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
@@ -47,12 +48,15 @@ public class AuditLogKafkaConsumer {
         String eventType   = extractField(payload, "eventType");
         String eventId     = resolveEventId(payload, topic);
 
+        MDC.put("eventId", eventId);
         try {
             // insert (not save): a second delivery of the same eventId fails on the _id and is skipped
             auditLogRepository.insert(AuditLogEntry.create(eventId, aggregateId, eventType, topic, payload));
             log.info("Audit log persisted: eventType={} aggregateId={}", eventType, aggregateId);
         } catch (DuplicateKeyException e) {
-            log.info("Duplicate event ignored: eventId={} eventType={}", eventId, eventType);
+            log.info("Duplicate event ignored: eventType={}", eventType);
+        } finally {
+            MDC.remove("eventId");
         }
     }
 

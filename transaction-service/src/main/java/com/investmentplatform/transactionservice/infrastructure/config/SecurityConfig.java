@@ -21,7 +21,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health/**", "/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health/**", "/actuator/health", "/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/transactions").hasAuthority("SCOPE_transactions:write")
                         .requestMatchers(HttpMethod.GET, "/api/transactions/**").hasAuthority("SCOPE_transactions:read")
                         .requestMatchers(HttpMethod.GET, "/api/transactions").hasAuthority("SCOPE_transactions:read")
