@@ -12,7 +12,9 @@ A portfolio project that simulates an investment platform using an event-driven 
 
 • Containerized the services and supporting infrastructure with Docker Compose; added unit, integration, and end-to-end tests using Testcontainers, and automated verification with GitHub Actions.
 
-Technologies: Java 17, Spring Boot, Spring Security, Spring Data JPA, MySQL, Kafka, MongoDB, Keycloak, Docker Compose, Testcontainers, Maven, GitHub Actions.
+Technologies: Java 25, Spring Boot, Spring Security, Spring Data JPA, MySQL, Kafka, MongoDB, Keycloak, Docker Compose, Testcontainers, Maven, GitHub Actions.
+
+Runs on Java 25 with virtual threads enabled for the HTTP layer.
 
 ## Architecture
 
@@ -52,7 +54,7 @@ Both `transaction-service` and `customer-service` use the shared `outbox-common`
 
 ## Stack
 
-Java 17, Spring Boot 3.3, Spring Data JPA (MySQL 8.4), Spring Data MongoDB (MongoDB 7), Spring Kafka, JUnit 5, Mockito, Testcontainers.
+Java 25, Spring Boot 3.4, Spring Data JPA (MySQL 8.4), Spring Data MongoDB (MongoDB 7), Spring Kafka, JUnit 5, Mockito, Testcontainers.
 
 ## Quick start
 

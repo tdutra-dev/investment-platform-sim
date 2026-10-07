@@ -1,11 +1,11 @@
 # Build from the repository root: docker build -f customer-service/Dockerfile .
-FROM maven:3.9-eclipse-temurin-17 AS build
+FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /build
 COPY . .
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B -q -pl customer-service -am package -DskipTests
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 COPY --from=build /build/customer-service/target/customer-service-*.jar app.jar
