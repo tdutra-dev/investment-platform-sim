@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version>
+        <version>3.4.13</version>
         <relativePath/>
     </parent>
 
@@ -19,11 +19,13 @@
     <description>Event-driven microservices with Spring Boot, Kafka, Transactional Outbox, MySQL and MongoDB</description>
 
     <properties>
-        <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <java.version>25</java.version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <!-- Override Spring Boot 3.3.x default (1.19.8) — supports Docker 29.x API >= 1.44 -->
         <testcontainers.version>1.21.3</testcontainers.version>
+        <!-- Boot 3.4 manages 1.15.x, which cannot instrument Java 25 classes (Mockito) -->
+        <byte-buddy.version>1.17.8</byte-buddy.version>
     </properties>
 
     <modules>
